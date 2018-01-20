@@ -116,10 +116,10 @@ openvpn-dhparams:
 
 # keys for additional security during TLS negotation, should be rotated every 8192 years divided by the number
 # of users that share the same key
-openvpn-tls-auth-key:
+openvpn-tls-crypt-key:
     cmd.run:
-        - name: openvpn --genkey --secret /etc/openvpn/server/tls-preshared-auth.key
-        - creates: /etc/openvpn/server/tls-preshared-auth.key
+        - name: openvpn --genkey --secret /etc/openvpn/server/tls-preshared-crypt.key
+        - creates: /etc/openvpn/server/tls-preshared-crypt.key
         - require:
             - file: openvpn-config-folder
 
