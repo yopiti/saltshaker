@@ -132,7 +132,7 @@ openvpn-udp-service:
         - watch:
             - file: openvpn-udp-gateway-conf
             - cmd: openvpn-dhparams
-            - cmd: openvpn-tls-auth-key
+            - cmd: openvpn-tls-crypt-key
 {% if pillar.get('openvpn', {}).get('sslcert', 'default') != 'default' %}
             - file: openvpn-gateway-ssl-cert
             - file: openvpn-gateway-ssl-key
@@ -149,7 +149,7 @@ openvpn-tcp-service:
         - watch:
             - file: openvpn-tcp-gateway-conf
             - cmd: openvpn-dhparams
-            - cmd: openvpn-tls-auth-key
+            - cmd: openvpn-tls-crypt-key
 {% if pillar.get('openvpn', {}).get('sslcert', 'default') != 'default' %}
             - file: openvpn-gateway-ssl-cert
             - file: openvpn-gateway-ssl-key
