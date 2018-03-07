@@ -21,6 +21,11 @@ base:
         - shared.secrets.postgresql
         - shared.authserver
 
+    'roles:vault':
+        - match: grain
+        - shared.buildserver
+        - shared.authserver
+
     'G@roles:dev or G@roles:buildserver or G@roles:buildworker':
         - match: compound
         - shared.buildserver
@@ -33,6 +38,14 @@ base:
     '*.test and G@roles:apps or G@roles:loadbalancer or G@roles:mail':
         - match: compound
         - shared.secrets.dev-ssl  # these are wildcard certificates for hostnames on the main test domain
+
+    '*.test and G@roles:goldfish':
+        - match: compound
+        - local.vault
+
+    '*.test and G@roles:photosync':
+        - match: compound
+        - local.photosync
 
     'roles:mail':
         - match: grain

@@ -19,19 +19,46 @@ openssh-reload:
         - enable: True
         - reload: True
         - watch:
-            - file: openssh-config
 {% if pillar.get("crypto", {}).get("generate-secure-dhparams", True) %}
             - file: openssh-replace-moduli
 {% endif %}
 
 
+openssh-config-folder:
+    file.directory:
+        - name: /etc/ssh/sshd_config.d
+        - makedirs: True
+        - user: root
+        - group: root
+        - mode: '0755'
+        - require:
+            - pkg: openssh
+
+
 openssh-config:
     file.managed:
-        - name: /etc/ssh/sshd_config
+        - name: /etc/ssh/sshd_config.d/00-sshd_config
         - source: salt://crypto/sshd_config.jinja
         - template: jinja
         - require:
-            - pkg: openssh
+            - file: openssh-config-folder
+        - watch_in:
+            - cmd: openssh-config-builder
+
+
+openssh-config-builder:
+    file.managed:
+        - name: /etc/ssh/assemble-ssh-config.sh
+        - source: salt://crypto/assemble-sshd-config.sh
+        - user: root
+        - group: root
+        - mode: '0750'
+        - require:
+            - file: openssh-config-folder
+    cmd.run:
+        - name: /etc/ssh/assemble-ssh-config.sh
+        - watch:
+            - file: /etc/ssh/sshd_config.d*
 
 
 {% if pillar.get("crypto", {}).get("generate-secure-dhparams", True) %}

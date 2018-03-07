@@ -86,9 +86,13 @@ concourse-authorized-key-consul-template-watcher:
             - file: authorized_worker_keys-template
 
 
-concourse-server-envvars:
+concourse-server-envvars{% if pillar['ci']['use-vault'] %}-template{% endif %}:
     file.managed:
+    {% if pillar['ci']['use-vault'] %}
+        - name: /etc/concourse/envvars.tpl
+    {% else %}
         - name: /etc/concourse/envvars  # read by concourse.service using systemd's `EnvironmentFile=`
+    {% endif %}
         - user: root
         - group: root
         - mode: '0600'
@@ -102,6 +106,27 @@ concourse-server-envvars:
                         pillar['postgresql'].get('pinned-ca-cert', 'default') == 'default'
                         else pillar['postgresql']['pinned-ca-cert']}}"
             CONCOURSE_ENCRYPTION_KEY="{{pillar['dynamicsecrets']['concourse-encryption']}}"
+
+            {%- if pillar['ci'].get('use-vault', True) %}
+            CONCOURSE_VAULT_URL="https://{{pillar['vault']['smartstack-hostname']}}:8200/"
+            CONCOURSE_VAULT_CA_CERT="{{pillar['ssl']['service-rootca-cert']}}"
+            CONCOURSE_VAULT_AUTH_BACKEND="approle"
+            CONCOURSE_VAULT_AUTH_PARAM="role_id={{pillar['dynamicsecrets']['concourse-role-id']}},secret_id=((secret_id))"
+concourse-server-envvars:
+    cmd.run:
+        - name: >-
+            sed "s#((secret_id))#$(/usr/local/bin/vault write -f -format=json auth/approle/role/concourse/secret-id | \
+                jq -r .data.secret_id)#"  /etc/concourse/envvars.tpl > /etc/concourse/envvars
+        - env:
+            - VAULT_ADDR: "https://vault.service.consul:8200/"
+            - VAULT_TOKEN: {{pillar['dynamicsecrets']['approle-auth-token']}}
+        - onchanges:
+            - file: concourse-server-envvars-template
+        - creates: /etc/concourse/envvars
+        - require:
+            - file: concourse-server-envvars-template
+            - file: vault
+            {% endif %}
 
 
 concourse-server:
@@ -117,21 +142,27 @@ concourse-server:
             group: concourse
             # postgresql on 127.0.0.1 works because there is haproxy@internal proxying it
             arguments: >
-                --bind-ip {{pillar.get('concourse-server', {}).get('atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+                --bind-ip {{pillar.get('concourse-server', {}).get('atc-ip',
+                    grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                        'internal-ip-index', 0)|int()])}}
                 --bind-port {{pillar.get('concourse-server', {}).get('atc-port', 8080)}}
                 --session-signing-key /etc/concourse/private/session_signing_key.pem
-                --tsa-bind-ip {{pillar.get('concourse-server', {}).get('tsa-internal-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+                --tsa-bind-ip {{pillar.get('concourse-server', {}).get('tsa-internal-ip',
+                    grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                        'internal-ip-index', 0)|int()])}}
                 --tsa-bind-port {{pillar.get('concourse-server', {}).get('tsa-port', 2222)}}
                 --tsa-host-key /etc/concourse/private/host_key.pem
                 --tsa-authorized-keys /etc/concourse/authorized_worker_keys
                 --external-url {{pillar['ci']['protocol']}}://{{pillar['ci']['hostname']}}
-                --peer-url http://{{pillar.get('concourse-server', {}).get('atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}:{{pillar.get('concourse-server', {}).get('atc-port', 8080)}}
+                --peer-url http://{{pillar.get('concourse-server', {}).get('atc-ip',
+                    grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                        'internal-ip-index', 0)|int()])}}:{{pillar.get('concourse-server', {}).get('atc-port', 8080)}}
         - use:
             - require-concourse-keys
         - require:
             - file: concourse-install
             - file: authorized_worker_keys-must-exist
-            - file: concourse-server-envvars
+            - concourse-server-envvars
     service.running:
         - name: concourse-web
         - sig: /usr/local/bin/concourse web
@@ -139,7 +170,7 @@ concourse-server:
         - watch:
             - file: concourse-server
             - file: concourse-install  # restart on a change of the binary
-            - file: concourse-server-envvars
+            - concourse-server-envvars  # can be cmd of file
 
 
 concourse-servicedef-tsa:
@@ -152,7 +183,9 @@ concourse-servicedef-tsa:
             routing: internal
             suffix: tsa
             mode: tcp
-            ip: {{pillar.get('concourse-server', {}).get('tsa-internal-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+            ip: {{pillar.get('concourse-server', {}).get('tsa-internal-ip',
+                    grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                        'internal-ip-index', 0)|int()])}}
             port: {{pillar.get('concourse-server', {}).get('tsa-port', 2222)}}
         - require:
             - file: concourse-server
@@ -170,7 +203,10 @@ concourse-servicedef-atc-internal:
             routing: internal
             suffix: atc-internal
             mode: http
-            ip: {{pillar.get('concourse-server', {}).get('atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+            ip: {{pillar.get('concourse-server', {}).get(
+                    'atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                        'internal-ip-index', 0)|int()]
+                )}}
             port: {{pillar.get('concourse-server', {}).get('atc-port', 8080)}}
         - require:
             - file: concourse-server
@@ -188,7 +224,10 @@ concourse-servicedef-atc:
             protocol: {{pillar['ci']['protocol']}}
             suffix: atc
             mode: http
-            ip: {{pillar.get('concourse-server', {}).get('atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+            ip: {{pillar.get('concourse-server', {}).get(
+                    'atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                        'internal-ip-index', 0)|int()]
+                )}}
             port: {{pillar.get('concourse-server', {}).get('atc-port', 8080)}}
             hostname: {{pillar['ci']['hostname']}}
         - require:
@@ -202,7 +241,9 @@ concourse-tcp-in{{pillar.get('concourse-server', {}).get('tsa-port', 2222)}}-rec
         - chain: INPUT
         - jump: ACCEPT
         - source: '0/0'
-        - destination: {{pillar.get('concourse-server', {}).get('tsa-internal-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+        - destination: {{pillar.get('concourse-server', {}).get('tsa-internal-ip',
+                           grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                               'internal-ip-index', 0)|int()])}}
         - dport: {{pillar.get('concourse-server', {}).get('tsa-port', 2222)}}
         - match: state
         - connstate: NEW
@@ -218,7 +259,9 @@ concourse-tcp-in{{pillar.get('concourse-server', {}).get('atc-port', 8080)}}-rec
         - chain: INPUT
         - jump: ACCEPT
         - source: '0/0'
-        - destination: {{pillar.get('concourse-server', {}).get('atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+        - destination: {{pillar.get('concourse-server', {}).get('atc-ip',
+                           grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                               'internal-ip-index', 0)|int()])}}
         - dport: {{pillar.get('concourse-server', {}).get('atc-port', 8080)}}
         - match: state
         - connstate: NEW
@@ -234,7 +277,9 @@ concourse-tcp-out{{pillar.get('concourse-server', {}).get('atc-port', 8080)}}-se
         - table: filter
         - chain: OUTPUT
         - jump: ACCEPT
-        - source: {{pillar.get('concourse-server', {}).get('atc-ip', grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get('internal-ip-index', 0)|int()])}}
+        - source: {{pillar.get('concourse-server', {}).get('atc-ip',
+                      grains['ip_interfaces'][pillar['ifassign']['internal']][pillar['ifassign'].get(
+                          'internal-ip-index', 0)|int()])}}
         - sport: {{pillar.get('concourse-server', {}).get('atc-port', 8080)}}
         - destination: '0/0'
         - match: state

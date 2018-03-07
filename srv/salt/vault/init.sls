@@ -6,8 +6,11 @@
 # credentials and more.
 #
 
-{% set vault_user = "vault" %}
-{% set vault_group = "vault" %}
+include:
+    - vault.install
+
+
+{% from 'vault/install.sls' import vault_user, vault_group %}
 
 
 vault-data-dir:
@@ -50,54 +53,6 @@ vault-config-dir:
             - group: vault
 
 
-vault:
-    group.present:
-        - name: {{vault_group}}
-    user.present:
-        - name: {{vault_user}}
-        - gid: {{vault_group}}
-        - groups:
-            - ssl-cert
-        - createhome: False
-        - home: /etc/vault
-        - shell: /bin/sh
-        - require:
-            - group: vault
-            - group: ssl-cert
-    archive.extracted:
-        - name: /usr/local/bin
-        - source: {{pillar["urls"]["vault"]}}
-        - source_hash: {{pillar["hashes"]["vault"]}}
-        - archive_format: zip
-        - unless: test -f /usr/local/bin/vault  # workaround for https://github.com/saltstack/salt/issues/42681
-        - if_missing: /usr/local/bin/vault
-        - enforce_toplevel: False
-    file.managed:
-        - name: /usr/local/bin/vault
-        - user: {{vault_user}}
-        - group: {{vault_user}}
-        - mode: '0755'
-        - replace: False
-        - require:
-            - user: vault
-            - file: vault-data-dir
-            - archive: vault
-
-
-# the vault executable must have the "cap_ipc_lock=+ep" flag so it can lock memory from swap.
-# Regardless, ideally Vault runs on a server with encryptd swap space. However even if it doesn't then locking the
-# memory will provide additional security. For more information see `man setcap` and `man cap_from_text`, the latter
-# is part of "libcap-dev" on Debian.
-vault-setcap:
-    cmd.run:
-        - name: setcap cap_ipc_lock=+ep /usr/local/bin/vault
-        - cwd: /usr/local/bin
-        - runas: root
-        - unless: getcap /usr/local/bin/vault | grep cap_ipc_lock >/dev/null
-        - require:
-            - file: vault
-
-
 vault-config:
     file.managed:
         - name: /etc/vault/vault.conf
@@ -135,6 +90,7 @@ vault-service:
         - sig: vault
         - enable: True
         - require:
+            - file: vault-data-dir
             - file: vault-service
             - file: vault-servicedef
             {% if 'consulserver' in grains['roles'] and pillar['vault']['backend'] == 'consul' %}
@@ -168,7 +124,7 @@ vault-init:
         {% if pillar['vault'].get('encrypt-vault-keys-with-gpg', False) %}
             {% set long_id = pillar['vault']['encrypt-vault-keys-with-gpg'][-16:] %}
             {% set keyloc = pillar['gpg']['shared-keyring-location'] %}
-        # use Bash process groups and fd pipes to send vault init's output into three separate
+        # use Bash process groups and fd pipes to send vault operator init's output into three separate
         # pipes:
         #   1. encrypt the output for the administrator
         #   2. save the initial root token to a file in /root and authenticate root as Vault root
@@ -177,7 +133,7 @@ vault-init:
             {
                 {
                     {
-                        /usr/local/bin/vault init |
+                        /usr/local/bin/vault operator init |
                         tee /dev/fd/5 /dev/fd/6 |
                         gpg --homedir {{keyloc}} \
                             --no-default-keyring \
@@ -195,15 +151,15 @@ vault-init:
                 grep "Unseal Key" |
                 cut -f2 -d":" |
                 tail -n 3 |
-                xargs -n 1 vault unseal;
-                cat /root/.vault-token | /usr/local/bin/vault auth -;
+                xargs -n 1 vault operator unseal;
+                cat /root/.vault-token | /usr/local/bin/vault login -;
             }
         {% else %}
         - name: >-
             {
                 {
                     {
-                        /usr/local/bin/vault init |
+                        /usr/local/bin/vault operator init |
                         tee /dev/fd/5 /dev/fd/6 >/root/vault_keys.txt;
                     } 5>&1 |
                     grep "Initial Root Token" |
@@ -213,13 +169,13 @@ vault-init:
                 grep "Unseal Key" |
                 cut -f2 -d':' |
                 tail -n 3 |
-                xargs -n 1 vault unseal;
-                cat /root/.vault-token | /usr/local/bin/vault auth -;
+                xargs -n 1 vault operator unseal;
+                cat /root/.vault-token | /usr/local/bin/vault login -;
             }
         {% endif %}
         # vault check -init returns error code 1 on an ERROR and 2 when Vault is uninitialized
         # so we do nothing on exit codes 0 and 1
-        - unless: /usr/local/bin/vault init -check >/dev/null; test $? -lt 2 && /bin/true
+        - unless: /usr/local/bin/vault operator init -status >/dev/null; test $? -lt 2 && /bin/true
         # we use Vault's Consul DNS API name here, because we can't rely on SmartStack being available
         # when the node has just been brought up. It doesn't matter here though, because Vault is
         # by definition local to this node when this state runs.
@@ -234,9 +190,9 @@ vault-init:
 # and set up their CA certificate and policies
 vault-cert-auth-enabled:
     cmd.run:
-        - name: /usr/local/bin/vault auth-enable cert
-        - unless: /usr/local/bin/vault auth -methods | grep cert >/dev/null
-        - onlyif: /usr/local/bin/vault init -check >/dev/null
+        - name: /usr/local/bin/vault auth enable cert
+        - unless: /usr/local/bin/vault auth list | grep cert >/dev/null
+        - onlyif: /usr/local/bin/vault operator init -status >/dev/null
         # we use Vault's Consul DNS API name here, because we can't rely on SmartStack being available
         # when the node has just been brought up. It doesn't matter here though, because Vault is
         # by definition local to this node when this state runs.
@@ -245,6 +201,66 @@ vault-cert-auth-enabled:
         - require:
             - service: vault-service
             - cmd: vault-init
+
+# Vault clients configured by Salt should watch for this state using cmd.run:onchanges
+# and set up their approles and policies
+vault-approle-auth-enabled:
+    cmd.run:
+        - name: /usr/local/bin/vault auth enable approle
+        - unless: /usr/local/bin/vault auth list | grep approle >/dev/null
+        - onlyif: /usr/local/bin/vault operator init -status >/dev/null
+        - env:
+            - VAULT_ADDR: "https://vault.service.consul:8200/"
+        - require:
+            - service: vault-service
+            - cmd: vault-init
+
+
+# create a token that can request secret-ids from approle
+vault-approle-access-token-policy:
+    cmd.run:
+        - name: >-
+            echo 'path "auth/approle/role/*" {
+                capabilities = ["read", "create", "update", "list"]
+            }' | /usr/local/bin/vault policy write approle_access -
+        - env:
+            - VAULT_ADDR: "https://vault.service.consul:8200/"
+        - unless: /usr/local/bin/vault policies | grep approle_access >/dev/null
+        - onlyif: /usr/local/bin/vault operator init -status >/dev/null
+
+
+# this creates a token using a per-salt-cluster uuid from dynamicsecrets. The token
+# will become invalid after 60 minutes unless the vault home runs this state again!
+# This allows minions to create approle secret-ids for themselves but not create new
+# secret ids after one hour. This is a compromise between automatic initialization and
+# security.
+vault-approle-access-token:
+    cmd.run:
+        - name: >-
+            /usr/local/bin/vault token revoke $TOKENID &&
+            /usr/local/bin/vault token create \
+                -id=$TOKENID \
+                -display-name="approle-auth" \
+                -policy=default -policy=approle_access \
+                -renewable=true \
+                -period=1h \
+                -explicit-max-ttl=0
+        - env:
+            - VAULT_ADDR: "https://vault.service.consul:8200/"
+            - TOKENID: "{{pillar['dynamicsecrets']['approle-auth-token']}}"
+        - unless: >-
+            test "$(/usr/local/bin/vault token lookup -format=json {{pillar['dynamicsecrets']['approle-auth-token']}} | jq -r .renewable)" == "true" ||
+            test "$(/usr/local/bin/vault token lookup -format=json {{pillar['dynamicsecrets']['approle-auth-token']}} | jq -r .data.ttl)" -gt 100
+
+
+vault-approle-access-token-renewal:
+    cmd.run:
+        - name: >-
+            /usr/local/bin/vault token renew {{pillar['dynamicsecrets']['approle-auth-token']}}
+        - env:
+            - VAULT_ADDR: "https://vault.service.consul:8200/"
+        - onlyif: >-
+            test "$(/usr/local/bin/vault token lookup -format=json {{pillar['dynamicsecrets']['approle-auth-token']}} | jq -r .renewable)" == "true"
 {% endif %}
 
 
