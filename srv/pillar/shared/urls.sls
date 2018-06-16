@@ -30,6 +30,7 @@ urls:
     consul-template: https://releases.hashicorp.com/consul-template/0.19.4/consul-template_0.19.4_linux_amd64.zip
     exxo: https://bintray.com/artifact/download/mbachry/exxo/exxo-0.0.7.tar.xz
     nomad: https://releases.hashicorp.com/nomad/0.8.3/nomad_0.8.3_linux_amd64.zip
+    notary: https://github.com/theupdateframework/notary/releases/download/v0.6.1/notary-Linux-amd64
     pyrun35: https://downloads.egenix.com/python/egenix-pyrun-2.2.3-py3.5_ucs4-linux-x86_64.tgz
     terraform: https://releases.hashicorp.com/terraform/0.11.7/terraform_0.11.7_linux_amd64.zip
     vault: https://releases.hashicorp.com/vault/0.10.1/vault_0.10.1_linux_amd64.zip
@@ -45,6 +46,7 @@ hashes:
     consul-template: sha256=5f70a7fb626ea8c332487c491924e0a2d594637de709e5b430ecffc83088abc0
     exxo: sha256=ce3d6ae10d364c5a0726cce127602fe6fa5d042b11afd21d79502f8216b42e1e
     nomad: sha256=c7faaee8fad0f6a74df01b9283253ee565f85791adca1d6a38462e0387dee175
+    notary: sha256=73353b2b4b85604c738a6800465133cb3a828dff0aa26f3c0926dd9a73e19879
     pyrun35: sha256=8bf8b374f582bb53600dd846a0cdb38e18586bbda06261321d48df69ddbf730e
     terraform: sha256=6b8ce67647a59b2a3f70199c304abca0ddec0e49fd060944c26f666298e23418
     vault: sha256=031e521b4603487126fd353a9557dd22a02304a8a11f843e9914be59a8009c8a
