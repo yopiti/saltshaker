@@ -9,9 +9,10 @@ PORT     | SMARTSTACK | ASSIGNED SERVICE
   5433   |      X     | PostgreSQL secure (currently unused)
   6379   |      X     | Redis internal network (shared)
   6380   |            | Redis local cache (not shared)
+  7899   |      X     | Notary signer GRPC
+  7999   |      X     | Notary server HTTP
   8100   |            | aptly API (devserver, link local)
   8200   |      X     | Vault
-  8201   |      X     | Vault Goldfish UI
   8300   |            | consul raft
   8301   |            | consul gossip
   8302   |            | consul wan
