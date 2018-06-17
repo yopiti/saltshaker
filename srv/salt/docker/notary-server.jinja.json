@@ -1,0 +1,41 @@
+{
+    "server": {
+        "http_addr": "{{ip}}:{{port}}",
+        "tls_key_file": "./fixtures/notary-server.key",
+        "tls_cert_file": "./fixtures/notary-server.crt"
+    },
+    "trust_service": {
+        "type": "remote",
+        "hostname": "notarysigner.local",
+        "port": "7899",
+        "key_algorithm": "ecdsa",
+        "tls_ca_file": "./fixtures/root-ca.crt",
+        "tls_client_cert": "./fixtures/notary-server.crt",
+        "tls_client_key": "./fixtures/notary-server.key"
+    },
+    "storage": {
+        "backend": "postgres",
+        "db_url": "{{dbuser}}:{{dbpass}}@tcp(localhost:5432)/{{dbname}}"
+    },
+    "auth": {
+        "type": "token",
+        "options": {
+            "realm": "https://auth.docker.io/token",
+            "service": "notary-server",
+            "issuer": "{{authserver}}",
+            "rootcertbundle": "/path/to/auth.docker.io/cert"
+        }
+    },
+    "logging": {
+        "level": "debug"
+    },
+    "caching": {
+        "max_age": {
+            "current_metadata": 300,
+            "consistent_metadata": 31536000,
+        }
+    },
+    "repositories": {
+        "gun_prefixes": ["docker.io/"{% if registry_url is defined %}, "{{registry_url}}"{% endif %}]
+    }
+}

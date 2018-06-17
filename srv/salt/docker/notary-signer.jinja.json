@@ -1,0 +1,16 @@
+{
+    "server": {
+        "grpc_addr": "{{ip}}:{{port}}",
+        "tls_cert_file": "./fixtures/notary-signer.crt",
+        "tls_key_file": "./fixtures/notary-signer.key",
+        "client_ca_file": "./fixtures/notary-server.crt"
+    },
+    "logging": {
+        "level": 2
+    },
+    "storage": {
+        "backend": "mysql",
+        "db_url": "user:pass@tcp(notarymysql:3306)/databasename?parseTime=true",
+        "default_alias": "passwordalias1"
+    }
+}
