@@ -13,8 +13,8 @@ haproxy-config-template-internal:
         - source: salt://haproxy/haproxy-internal.jinja.cfg
         - require:
             - pkg: haproxy
-        - watch_in:
-            - service: consul-template-service
+        - onchanges_in:
+            - cmd: consul-template-servicerenderer
 
 
 smartstack-internal:
@@ -41,6 +41,7 @@ smartstack-internal:
         - require:
             - file: haproxy-multi
             - file: haproxy-config-template-internal
+            - file: consul-template-dir
     service.enabled:  # haproxy will be started by the smartstack script rendered by consul-template (see command above)
         - name: haproxy@internal
         - require:

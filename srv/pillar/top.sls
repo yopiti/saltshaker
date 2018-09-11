@@ -31,21 +31,23 @@ base:
         - shared.buildserver
         - shared.secrets.gpg-package-signing
 
-    'E@.+(?!test)$ and G@roles:apps or G@roles:loadbalancer or G@roles:mail':
+    # spaces ' ' are important after parentheses for the matcher to work (see
+    # https://docs.saltstack.com/en/latest/topics/targeting/compound.html)
+    'not *.test and ( G@roles:apps or G@roles:loadbalancer or G@roles:mail )':
         - match: compound
         - shared.secrets.live-ssl  # these are wildcard certificates for hostnames on the main domain
 
-    '*.test and G@roles:apps or G@roles:loadbalancer or G@roles:mail':
+    '*.test and ( G@roles:apps or G@roles:loadbalancer or G@roles:mail )':
         - match: compound
         - shared.secrets.dev-ssl  # these are wildcard certificates for hostnames on the main test domain
-
-    '*.test and G@roles:goldfish':
-        - match: compound
-        - local.vault
 
     '*.test and G@roles:photosync':
         - match: compound
         - local.photosync
+
+    '*.test and ( G@roles:webdav or G@roles:authserver )':
+        - match: compound
+        - local.webdav
 
     'roles:mail':
         - match: grain

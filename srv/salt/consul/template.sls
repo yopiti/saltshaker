@@ -1,4 +1,8 @@
 
+include:
+    - consul.sync
+
+
 consul-template:
     archive.extracted:
         - name: /usr/local/bin
@@ -54,6 +58,7 @@ consul-template-config:
                         if pillar['vault'].get('pinned-ca-cert', 'default') == 'default'
                         else pillar['vault']['pinned-ca-cert']}}
             vault_url: https://{{pillar['vault']['smartstack-hostname']}}:8200/
+            consul_acl_token: {{pillar['dynamicsecrets']['consul-acl-token']}}
         - require:
             - file: consul-basedir
 
@@ -74,10 +79,9 @@ consul-template-service:
             - file: consul-data-dir
             - file: consul-template-config
             - file: consul-template-dir
-            - file: consul-template
+            - cmd: consul-sync
         - watch:
             - file: consul-template-service
-            - file: consul-template-servicerenderer
             - file: consul-template  # restart on a change of the binary
 
 
@@ -94,6 +98,7 @@ consul-template-service-reload:
         - watch:
             - file: /etc/consul/template.d*
             - file: /etc/consul/consul-template.conf
+            - cmd: consul-template-servicerenderer
 
 
 consul-template-servicerenderer:
@@ -105,6 +110,11 @@ consul-template-servicerenderer:
         - mode: '0644'
         - require:
             - file: consul-basedir
+    cmd.run:
+        - name: >
+            test ! -z "$(ls -A /etc/consul/renders)" && rm /etc/consul/renders/*; /bin/true
+        - onchanges:
+            - file: consul-template-servicerenderer
 
 
 # vim: syntax=yaml

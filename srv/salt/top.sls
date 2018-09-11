@@ -13,15 +13,15 @@ base:
         - powerdns.recursor
         - duplicity
         - vault.install
+        - mn.cas.client
 
     'roles:xenserver':
         - match: grain
         - xen
         - consul.server
 
-    # leading "not" is not supported http://docs.saltstack.com/en/latest/topics/targeting/compound.html
     # everything that is not a consul server has a consul agent
-    '* and not G@roles:consulserver and not G@roles:xenserver':
+    'not G@roles:consulserver and not G@roles:xenserver':
         - match: compound
         - consul.agent
 
@@ -38,12 +38,7 @@ base:
         - match: grain
         - vault
         - mn.cas.vault_database
-        - vault.vault_goldfish
         - dev.concourse.vault_credentials
-
-    'roles:goldfish':
-        - match: grain
-        - vault.goldfish_ui
 
     'roles:docker-registry':
         - match: grain
@@ -97,7 +92,7 @@ base:
         - mn.cas.postgres_spapi_access # ^ ditto
 
     # every node that's not a mailserver routes through a mailserver via smartstack
-    '* and not G@roles:mail':
+    'not G@roles:mail':
         - match: compound
         - ssmtp
 
@@ -122,6 +117,7 @@ base:
         - mn.cas.server
         - mn.appconfig
         - docker.authserver_dockerregistry  # empty unless a JWT key is configured
+        - apache.webdav_permissions_py
 
     'roles:loadbalancer':
         - match: grain
@@ -130,6 +126,14 @@ base:
     'roles:vpngateway':
         - match: grain
         - openvpn.gateway
+
+    'not G@roles:vpngateway':
+        - match: compound
+        - openvpn.gateway_accessible
+
+    'roles:webdav':
+        - match: grain
+        - apache.webdav
 
     '*.test':
         # put vagrant user config on .test machines

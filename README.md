@@ -235,21 +235,32 @@ are therefor only rendered to assigned minions from the master.
 
 ```yaml
 # Example configuration
-ext_pillar:
+    # Extension modules
+    extension_modules: /srv/salt-modules
+
+    ext_pillar:
     - dynamicsecrets:
-        - '*':  # render the following secrets to all minions
-            - consul-encryptionkey:
+        config:
+            approle-auth-token:
+                type: uuid
+            concourse-encryption:
+                length: 32
+            concourse-hostkey:
+                length: 2048
+                type: rsa
+            consul-acl-token:
+                type: uuid
+                unique-per-host: True
+            consul-encryptionkey:
                 encode: base64
                 length: 16
-                type: password  # this is the default for all values
-            - consul-initialacl:
-                type: uuid  # returns a UUID4 built from a secure random source
-        - database:  # render to minions with the database role
-            - postgres
-        - dev:  # render to minions with the dev role
-            - concourse-signingkey:
-                length: 2048
-                type: rsa  # generate a private key
+        grainmapping:
+            roles:
+                authserver:
+                    - approle-auth-token
+        hostmapping:
+            '*':
+                - consul-acl-token
 ```
 
 For `type: password` the Pillar will simply contain the random password string.
@@ -260,6 +271,9 @@ properties:
  * `public_pem` the public key in PEM encoding
  * `public` the public key in `ssh-rsa` format
  * `key` the private key in PEM encoding
+
+The dynamicsecrets pillar has been extracted [into it's own project at 
+jdelic/dynamicsecrets/](https://github.com/jdelic/dynamicsecrets).
 
 
 # Deploying applications
@@ -548,6 +562,8 @@ Those are:
 
 ### Accumulators
 
+**PostgreSQL**
+
 The PostgreSQL configuration uses two accumulators that record `database user`
 pairs (separated by a single space) for the `pg_hba.conf` file. These
 accumulators are called:
@@ -578,6 +594,26 @@ mydb-remote-user:
         - text: {{pillar['vault']['postgres']['dbname']}} {{pillar['vault']['postgres']['dbuser']}}
         - require_in:
             - file: postgresql-hba-config
+```
+
+**Apache2**
+
+The Apache2 configuration uses an acuumulator `apache2-listen-ports` to gather
+all listen directives for its `/etc/apache2/ports.conf` file. The filename
+attribute  for states setting up new `Listen` directives, should be set to 
+`apache2-ports-config`. The values accumulated can be either just port numbers
+or `ip:port` pairs.
+
+Example:
+
+```yaml
+apache2-webdav-port:
+    file.accumulated:
+        - name: apache2-listen-ports
+        - filename: /etc/apache2/ports.conf
+        - text: {{my_ip}}:{{my_port}}
+        - require_in:
+            - file: apache2-ports-config
 ```
 
 ## PowerDNS Recursor
