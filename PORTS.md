@@ -11,6 +11,7 @@ PORT     | SMARTSTACK | ASSIGNED SERVICE
   6380   |            | Redis local cache (not shared)
   7899   |      X     | Notary signer GRPC
   7999   |      X     | Notary server HTTP
+  8080   |      X     | Concourse UI
   8100   |      X     | aptly API
   8200   |      X     | Vault
   8300   |            | consul raft
