@@ -13,7 +13,7 @@ docker-registry-tokenauth:
                 /usr/local/authserver/bin/django-admin.py dockerauth --settings=authserver.settings \
                     registry create --name "Main Registry" \
                         --client-id "{{registry_hostname}}" \
-                        --domain "{{registry_hostname}}" --sign-key-pem -
+                        --domain "{{pillar['authserver']['hostname']}}"
         - unless: >-
             /usr/local/authserver/bin/envdir /etc/appconfig/authserver/env/ \
                 /usr/local/authserver/bin/django-admin.py dockerauth --settings=authserver.settings \
