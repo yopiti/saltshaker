@@ -5,6 +5,7 @@ PORT     | SMARTSTACK | ASSIGNED SERVICE
     25   |      X*    | SMTP
    143   |            | IMAP
    993   |            | IMAP
+  5000   |      X     | Docker Registry
   5432   |      X     | PostgreSQL
   5433   |      X     | PostgreSQL secure (currently unused)
   6379   |      X     | Redis internal network (shared)
