@@ -62,6 +62,13 @@ concourse-worker:
                 --garden-network-pool {{pillar.get('ci', {}).get('garden-network-pool', '10.254.0.0/22')}}
                 --garden-docker-registry {{pillar.get('ci', {}).get('garden-docker-registry', 'registry-1.docker.io')}}
                 --garden-dns-server=169.254.1.1
+                {%- if pillar.get('wellknown_hosts', None) -%}
+                    {%- for line in pillar['wellknown_hosts'].split('\n') -%}
+                        {%- if line -%}
+                {{' '}}--garden-additional-host-entry="{{line}}"
+                        {%- endif -%}
+                    {%- endfor -%}
+                {%- endif %}
         - require:
             - file: concourse-install
             - file: concourse-worker-dir
