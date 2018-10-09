@@ -27,7 +27,7 @@ mine_functions:
 # You shouldn't use this outside of a LOCAL VAGRANT NETWORK. This configuration
 # saves you from setting up a DNS server by replicating it in all nodes' /etc/hosts files.
 wellknown_hosts: |
-    192.168.56.163   auth.{{external_tld}} mail.{{external_tld}} calendar.{{external_tld}} ci.{{external_tld}}
+    192.168.56.163   auth.{{external_tld}} mail.{{external_tld}} calendar.{{external_tld}} ci.{{external_tld}} registry.{{external_tld}}
     192.168.56.164   smtp.{{external_tld}}
 
 # vim: syntax=yaml
