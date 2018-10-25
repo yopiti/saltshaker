@@ -32,7 +32,7 @@ urls:
     notary: http://fileserver.maurusnet.test/downloads/notary/notary-Linux-amd64
     pyrun35: http://fileserver.maurusnet.test/downloads/exxo/egenix-pyrun-2.2.3-py3.5_ucs4-linux-x86_64.tgz
     terraform: http://fileserver.maurusnet.test/downloads/terraform/terraform_0.11.8_linux_amd64.zip
-    vault: http://fileserver.maurusnet.test/downloads/vault/vault_0.11.3_linux_amd64.zip
+    vault: http://fileserver.maurusnet.test/downloads/vault/vault_0.11.4_linux_amd64.zip
     vault-gpg-plugin: http://fileserver.maurusnet.test/downloads/vault-gpg-plugin/linux_amd64.zip
     vault-ssh-helper: http://fileserver.maurusnet.test/downloads/vault/vault-ssh-helper_0.1.4_linux_amd64.zip
     fpmdeps: http://fileserver.maurusnet.test/downloads/ruby/fpm+deps.zip
@@ -49,7 +49,7 @@ hashes:
     notary: sha256=73353b2b4b85604c738a6800465133cb3a828dff0aa26f3c0926dd9a73e19879
     pyrun35: sha256=8bf8b374f582bb53600dd846a0cdb38e18586bbda06261321d48df69ddbf730e
     terraform: sha256=84ccfb8e13b5fce63051294f787885b76a1fedef6bdbecf51c5e586c9e20c9b7
-    vault: sha256=b921abf4ade14087dbc21b6b353aa65f0630fad3275f27641c48b3d36093af25
+    vault: sha256=3e44826ffcf3756a72d6802d96ea244e605dad362ece27d5c8f8839fb69a7079
     vault-gpg-plugin: sha256=5de768840cc4c6d1b13128a707f85bec2f2af802e583a4c519cc3f7886fd76e6
     vault-gpg-plugin-binary: sha256=1a3cb5ef949ccea223df019b7dd7dd1de2af4ea4e2b14364790e90f6386e4911
     vault-ssh-helper: sha256=156ce8250725e64a3e4dc51018a18813dd44d1f2a6c853976bc20e1625d631a1
