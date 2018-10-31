@@ -32,7 +32,7 @@ urls:
     nomad: https://releases.hashicorp.com/nomad/0.8.6/nomad_0.8.6_linux_amd64.zip
     notary: https://github.com/theupdateframework/notary/releases/download/v0.6.1/notary-Linux-amd64
     pyrun35: https://downloads.egenix.com/python/egenix-pyrun-2.2.3-py3.5_ucs4-linux-x86_64.tgz
-    terraform: https://releases.hashicorp.com/terraform/0.11.8/terraform_0.11.8_linux_amd64.zip
+    terraform: https://releases.hashicorp.com/terraform/0.11.10/terraform_0.11.10_linux_amd64.zip
     vault: https://releases.hashicorp.com/vault/0.11.4/vault_0.11.4_linux_amd64.zip
     vault-gpg-plugin: https://github.com/LeSuisse/vault-gpg-plugin/releases/download/v0.2.1/linux_amd64.zip
     vault-ssh-helper: https://releases.hashicorp.com/vault-ssh-helper/0.1.4/vault-ssh-helper_0.1.4_linux_amd64.zip
@@ -48,7 +48,7 @@ hashes:
     nomad: sha256=7569561e4a8fdb283f36f9ff6ed7834be6b1f4a2149246f8bd3fb719265c800c
     notary: sha256=73353b2b4b85604c738a6800465133cb3a828dff0aa26f3c0926dd9a73e19879
     pyrun35: sha256=8bf8b374f582bb53600dd846a0cdb38e18586bbda06261321d48df69ddbf730e
-    terraform: sha256=84ccfb8e13b5fce63051294f787885b76a1fedef6bdbecf51c5e586c9e20c9b7
+    terraform: sha256=43543a0e56e31b0952ea3623521917e060f2718ab06fe2b2d506cfaa14d54527
     vault: sha256=3e44826ffcf3756a72d6802d96ea244e605dad362ece27d5c8f8839fb69a7079
     vault-gpg-plugin: sha256=5de768840cc4c6d1b13128a707f85bec2f2af802e583a4c519cc3f7886fd76e6
     vault-gpg-plugin-binary: sha256=1a3cb5ef949ccea223df019b7dd7dd1de2af4ea4e2b14364790e90f6386e4911
