@@ -15,7 +15,7 @@ secure-base-dir:
 
 secure-tablespace-dir:
     file.directory:
-        - name: /secure/postgres/10/main
+        - name: /secure/postgres/main
         - user: postgres
         - group: postgres
         - mode: '0750'
@@ -23,11 +23,11 @@ secure-tablespace-dir:
         - require:
             - file: secure-base-dir
 
-
+{% if pillar.get('postgresql', {}).get('start-cluster', True) %}
 secure-tablespace:
     postgres_tablespace.present:
         - name: secure
-        - directory: /secure/postgres/10/main
+        - directory: /secure/postgres/main
         - db_user: postgres
         - user: postgres
         - require:
@@ -35,5 +35,6 @@ secure-tablespace:
             - secure-tablespace-dir
         - require_in:
             - cmd: postgresql-sync
+{% endif %}
 
 # vim: syntax=yaml
